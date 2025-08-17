@@ -110,20 +110,45 @@ class GameManager:
                                     dx = other_player.x - player.x
                                     dy = other_player.y - player.y
                                     distance = max(1, math.sqrt(dx*dx + dy*dy))
-                                    scale = push_force * (1 - (distance / effective_push_radius))
-                                    other_player.x += dx * scale / distance
-                                    other_player.y += dy * scale / distance
-                                    self._enforce_world_boundaries(other_player)
+                                    other_player_size = other_player.radius + (other_player.score if hasattr(other_player, 'score') else 0)
+                                    player_size = player.radius + player.score
+                                    size_threshold = skills_cfg['push_skill']['size_threshold_multiplier']
+
+                                    if other_player_size > player_size * size_threshold:
+                                        # Object is too big, push player away
+                                        scale = push_force * (1 - (distance / effective_push_radius))
+                                        player.x -= dx * scale / distance
+                                        player.y -= dy * scale / distance
+                                        self._enforce_world_boundaries(player)
+                                    else:
+                                        # Push object away
+                                        scale = push_force * (1 - (distance / effective_push_radius))
+                                        other_player.x += dx * scale / distance
+                                        other_player.y += dy * scale / distance
+                                        self._enforce_world_boundaries(other_player)
                             
                             for ball in self.balls:
                                 if self._is_in_skill_range(player, ball, effective_push_radius):
+                                    ball_size = ball.radius
+                                    player_size = player.radius + player.score
+                                    size_threshold = skills_cfg['push_skill']['size_threshold_multiplier']
+
                                     dx = ball.x - player.x
                                     dy = ball.y - player.y
                                     distance = max(1, math.sqrt(dx*dx + dy*dy))
-                                    scale = push_force * (1 - (distance / effective_push_radius))
-                                    ball.x += dx * scale / distance
-                                    ball.y += dy * scale / distance
-                                    self._enforce_world_boundaries(ball)
+
+                                    if ball_size > player_size * size_threshold:
+                                        # Object is too big, push player away
+                                        scale = push_force * (1 - (distance / effective_push_radius))
+                                        player.x -= dx * scale / distance
+                                        player.y -= dy * scale / distance
+                                        self._enforce_world_boundaries(player)
+                                    else:
+                                        # Push object away
+                                        scale = push_force * (1 - (distance / effective_push_radius))
+                                        ball.x += dx * scale / distance
+                                        ball.y += dy * scale / distance
+                                        self._enforce_world_boundaries(ball)
                 
                 # Update pull skill
                 if hasattr(player, 'pull_skill_active') and player.pull_skill_active:
@@ -141,23 +166,35 @@ class GameManager:
                                 if player_id == other_id:
                                     continue
                                 if self._is_in_skill_range(player, other_player, effective_pull_radius):
-                                    dx = other_player.x - player.x
-                                    dy = other_player.y - player.y
-                                    distance = max(1, math.sqrt(dx*dx + dy*dy))
-                                    scale = pull_force * (1 - (distance / effective_pull_radius))
-                                    other_player.x -= dx * scale / distance  # Invert direction for pull
-                                    other_player.y -= dy * scale / distance  # Invert direction for pull
-                                    self._enforce_world_boundaries(other_player)
+                                    other_player_size = other_player.radius + (other_player.score if hasattr(other_player, 'score') else 0)
+                                    player_size = player.radius + player.score
+                                    size_threshold = skills_cfg['pull_skill']['size_threshold_multiplier']
+
+                                    if not (other_player_size > player_size * size_threshold):
+                                        # Only pull if not too big
+                                        dx = other_player.x - player.x
+                                        dy = other_player.y - player.y
+                                        distance = max(1, math.sqrt(dx*dx + dy*dy))
+                                        scale = pull_force * (1 - (distance / effective_pull_radius))
+                                        other_player.x -= dx * scale / distance  # Invert direction for pull
+                                        other_player.y -= dy * scale / distance  # Invert direction for pull
+                                        self._enforce_world_boundaries(other_player)
                             
                             for ball in self.balls:
                                 if self._is_in_skill_range(player, ball, effective_pull_radius):
-                                    dx = ball.x - player.x
-                                    dy = ball.y - player.y
-                                    distance = max(1, math.sqrt(dx*dx + dy*dy))
-                                    scale = pull_force * (1 - (distance / effective_pull_radius))
-                                    ball.x -= dx * scale / distance  # Invert direction for pull
-                                    ball.y -= dy * scale / distance  # Invert direction for pull
-                                    self._enforce_world_boundaries(ball)
+                                    ball_size = ball.radius
+                                    player_size = player.radius + player.score
+                                    size_threshold = skills_cfg['pull_skill']['size_threshold_multiplier']
+
+                                    if not (ball_size > player_size * size_threshold):
+                                        # Only pull if not too big
+                                        dx = ball.x - player.x
+                                        dy = ball.y - player.y
+                                        distance = max(1, math.sqrt(dx*dx + dy*dy))
+                                        scale = pull_force * (1 - (distance / effective_pull_radius))
+                                        ball.x -= dx * scale / distance  # Invert direction for pull
+                                        ball.y -= dy * scale / distance  # Invert direction for pull
+                                        self._enforce_world_boundaries(ball)
     
     def _is_in_skill_range(self, obj1, obj2, skill_radius):
         """Check if two objects are within skill range of each other based on skill_radius from obj1's center"""
