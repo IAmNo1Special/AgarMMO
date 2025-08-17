@@ -12,9 +12,20 @@ This is the main entry point for the server application. It is responsible for:
 
 This module contains the `NetworkManager` class, which handles all network-related operations on the server side. Its responsibilities include:
 *   Binding the server socket and listening for incoming connections.
-*   Managing client connections, including rate limiting and handling disconnections.
+*   Managing client connections, including rate limiting and handling disconnections, and sending `ServerFullPacket` when applicable.
 *   Creating and managing `ClientThread` instances for each connected client.
 *   Orchestrating the main server loop, which includes processing game updates and maintaining the tick rate.
+
+## Dependencies
+
+*   `socket`, `threading`, `json`, `weakref`, `logging`, `select`: Core Python libraries for networking, concurrency, data serialization, and logging.
+*   `shared/config_loader.py`: For loading server and game configurations.
+*   `shared/entities/player.py`, `shared/entities/food.py`: To create and manage player and food objects.
+*   `shared/packets.py`: Defines the various packet types used for communication between client and server.
+*   `server/game_manager.py`: Used by `server/network_manager.py` and `server/client_handler.py` for game logic.
+*   `server/network_manager.py`: The main server component.
+*   `server/client_handler.py`: Used by `server/network_manager.py` to handle individual clients.
+
 
 ## `server/game_manager.py` - Game Logic Management
 
@@ -30,10 +41,10 @@ This module contains the `GameManager` class, which encapsulates all core game l
 
 ## `server/client_handler.py` - Client Communication Handler
 
-This module contains the `ClientThread` class, which is responsible for managing communication with a single connected client. Each client has its own `ClientThread`. Its responsibilities include:
-*   Receiving player names during initial connection.
-*   Handling incoming messages from the client (e.g., movement commands, skill usage requests).
-*   Sending game state updates to its respective client.
+This module contains the `ClientThread` class, which is responsible for managing communication with a single connected client using defined `Packet` objects. Each client has its own `ClientThread`. Its responsibilities include:
+*   Receiving `ConnectPacket` for initial connection and sending `PlayerIdPacket` or `UsernameTakenPacket` responses.
+*   Handling incoming `Packet` objects from the client (e.g., `MovePacket`, `SkillPacket`, `GetGameStatePacket`, `PingPacket`).
+*   Sending `GameStatePacket` updates to its respective client.
 *   Managing the client's connection lifecycle (e.g., timeouts, disconnections).
 
 ## Dependencies

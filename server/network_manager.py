@@ -15,6 +15,7 @@ from shared.entities.player import Player
 from shared.entities.food import Food
 from server.client_handler import ClientThread
 from server.game_manager import GameManager
+from shared.packets import ServerFullPacket
 
 logger = logging.getLogger(__name__)
 
@@ -193,7 +194,10 @@ class NetworkManager:
                     # Check max connections
                     if self.connections >= self.max_connections:
                         logger.warning(f"Max connections ({self.max_connections}) reached")
-                        conn.sendall(b"SERVER_FULL")
+                        server_full_packet = ServerFullPacket(message=network_cfg['protocol']['server_full_message'])
+                        # Need to send length prefix manually as this is outside ClientThread
+                        response_bytes = server_full_packet.to_json().encode('utf-8')
+                        conn.sendall(len(response_bytes).to_bytes(4, 'big') + response_bytes)
                         conn.close()
                         continue
                     
@@ -217,7 +221,7 @@ class NetworkManager:
                     self.client_threads[current_id] = client_thread
                     client_thread.start()
                     
-                    logger.info(f"New connection from {addr} (ID: {current_id})")
+                    logger.info(f"New connection from {addr} (ID: {current_id})\n")
                     
             except Exception as e:
                 if self.running:  # Only log if we're not shutting down
