@@ -75,10 +75,15 @@ class GameManager:
         """Handle player skill usage."""
         print(f"[SKILL] Player {player_id} used {skill_name}")
         if skill_name == "push":
-            pusher = self.players.get(player_id)
-            if pusher:
-                pusher.push_skill_active = True
-                pusher.push_skill_end_time = time.time() + skills_cfg['push_skill']['duration']
+            player = self.players.get(player_id)
+            if player:
+                player.push_skill_active = True
+                player.push_skill_end_time = time.time() + skills_cfg['push_skill']['duration']
+        elif skill_name == "pull":
+            player = self.players.get(player_id)
+            if player:
+                player.pull_skill_active = True
+                player.pull_skill_end_time = time.time() + skills_cfg['pull_skill']['duration']
 
     def update_skills(self):
         """Update active skills with optimized collision detection"""
@@ -86,66 +91,87 @@ class GameManager:
         
         with self.lock:
             for player_id, player in list(self.players.items()):
-                if not hasattr(player, 'push_skill_active') or not player.push_skill_active:
-                    continue
-                    
-                if current_time > player.push_skill_end_time:
-                    player.push_skill_active = False
-                    continue
-                    
-                # Get push skill parameters
-                push_skill = player.skills.get('push')
-                if not push_skill:
-                    continue
-                    
-                # Get push radius from skill
-                base_push_radius = getattr(push_skill, 'radius', skills_cfg['push_skill']['base_radius'])
-                effective_push_radius = base_push_radius + (player.score * skills_cfg['push_skill']['score_multiplier'])
+                # Update push skill
+                if hasattr(player, 'push_skill_active') and player.push_skill_active:
+                    if current_time > player.push_skill_end_time:
+                        player.push_skill_active = False
+                    else:
+                        push_skill = player.skills.get('push')
+                        if push_skill:
+                            effective_push_radius = push_skill.radius + (player.score * skills_cfg['push_skill']['score_multiplier'])
+                            # Adjust visual radius to account for player's own size, making the visual circle represent the maximum reach
+                            player.push_radius = effective_push_radius + player.radius # Set push_radius for client rendering
+                            push_force = push_skill.push_force
+                            
+                            for other_id, other_player in list(self.players.items()):
+                                if player_id == other_id:
+                                    continue
+                                if self._is_in_skill_range(player, other_player, effective_push_radius):
+                                    dx = other_player.x - player.x
+                                    dy = other_player.y - player.y
+                                    distance = max(1, math.sqrt(dx*dx + dy*dy))
+                                    scale = push_force * (1 - (distance / effective_push_radius))
+                                    other_player.x += dx * scale / distance
+                                    other_player.y += dy * scale / distance
+                                    self._enforce_world_boundaries(other_player)
+                            
+                            for ball in self.balls:
+                                if self._is_in_skill_range(player, ball, effective_push_radius):
+                                    dx = ball.x - player.x
+                                    dy = ball.y - player.y
+                                    distance = max(1, math.sqrt(dx*dx + dy*dy))
+                                    scale = push_force * (1 - (distance / effective_push_radius))
+                                    ball.x += dx * scale / distance
+                                    ball.y += dy * scale / distance
+                                    self._enforce_world_boundaries(ball)
                 
-                # Calculate push force based on skill level
-                push_force = getattr(push_skill, 'push_force', skills_cfg['push_skill']['push_force'])
-                
-                # Check collisions with other players
-                for other_id, other_player in list(self.players.items()):
-                    if player_id == other_id:
-                        continue
-                        
-                    if self._is_in_in_push_range(player, other_player, effective_push_radius):
-                        # Calculate push direction and apply force
-                        dx = other_player.x - player.x
-                        dy = other_player.y - player.y
-                        distance = max(1, math.sqrt(dx*dx + dy*dy))
-                        
-                        # Normalize and scale by push force
-                        scale = push_force * (1 - (distance / effective_push_radius))
-                        other_player.x += dx * scale / distance
-                        other_player.y += dy * scale / distance
-                        self._enforce_world_boundaries(other_player)
-                
-                # Check collisions with balls
-                for ball in self.balls:
-                    if self._is_in_push_range(player, ball, effective_push_radius):
-                        dx = ball.x - player.x
-                        dy = ball.y - player.y
-                        distance = max(1, math.sqrt(dx*dx + dy*dy))
-                        
-                        # Normalize and scale by push force
-                        scale = push_force * (1 - (distance / effective_push_radius))
-                        ball.x += dx * scale / distance
-                        ball.y += dy * scale / distance
-                        self._enforce_world_boundaries(ball)
+                # Update pull skill
+                if hasattr(player, 'pull_skill_active') and player.pull_skill_active:
+                    if current_time > player.pull_skill_end_time:
+                        player.pull_skill_active = False
+                    else:
+                        pull_skill = player.skills.get('pull')
+                        if pull_skill:
+                            effective_pull_radius = pull_skill.radius + (player.score * skills_cfg['pull_skill']['score_multiplier'])
+                            # Adjust visual radius to account for player's own size, making the visual circle represent the maximum reach
+                            player.pull_radius = effective_pull_radius + player.radius # Set pull_radius for client rendering
+                            pull_force = pull_skill.pull_force
+                            
+                            for other_id, other_player in list(self.players.items()):
+                                if player_id == other_id:
+                                    continue
+                                if self._is_in_skill_range(player, other_player, effective_pull_radius):
+                                    dx = other_player.x - player.x
+                                    dy = other_player.y - player.y
+                                    distance = max(1, math.sqrt(dx*dx + dy*dy))
+                                    scale = pull_force * (1 - (distance / effective_pull_radius))
+                                    other_player.x -= dx * scale / distance  # Invert direction for pull
+                                    other_player.y -= dy * scale / distance  # Invert direction for pull
+                                    self._enforce_world_boundaries(other_player)
+                            
+                            for ball in self.balls:
+                                if self._is_in_skill_range(player, ball, effective_pull_radius):
+                                    dx = ball.x - player.x
+                                    dy = ball.y - player.y
+                                    distance = max(1, math.sqrt(dx*dx + dy*dy))
+                                    scale = pull_force * (1 - (distance / effective_pull_radius))
+                                    ball.x -= dx * scale / distance  # Invert direction for pull
+                                    ball.y -= dy * scale / distance  # Invert direction for pull
+                                    self._enforce_world_boundaries(ball)
     
-    def _is_in_push_range(self, obj1, obj2, push_radius):
-        """Check if two objects are within push range of each other"""
+    def _is_in_skill_range(self, obj1, obj2, skill_radius):
+        """Check if two objects are within skill range of each other based on skill_radius from obj1's center"""
         dx = obj2.x - obj1.x
         dy = obj2.y - obj1.y
         distance_sq = dx*dx + dy*dy
         
-        obj1_effective_radius = obj1.radius + (obj1.score if hasattr(obj1, 'score') else 0)
-        obj2_effective_radius = obj2.radius + (obj2.score if hasattr(obj2, 'score') else 0)
+        # The skill effect should only occur within the visual radius, which is skill_radius
+        # from the center of obj1 (the player using the skill).
+        # We also need to consider the radius of obj2, so the effective range for obj2's center
+        # is skill_radius + obj2.radius
+        obj2_radius = obj2.radius + (obj2.score if hasattr(obj2, 'score') else 0) # Use obj2's effective radius
         
-        max_distance = (obj1_effective_radius + obj2_effective_radius + push_radius) ** 2
-        return distance_sq <= max_distance
+        return distance_sq <= (skill_radius + obj2_radius) ** 2
 
     def _enforce_world_boundaries(self, game_object):
         """Ensure a game object stays within the world boundaries"""

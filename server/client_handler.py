@@ -137,6 +137,10 @@ class ClientThread(threading.Thread):
             with server.lock:
                 if self.client_id in server.players:
                     server.game_manager.use_skill(self.client_id, "push")
+        elif message == "pull":
+            with server.lock:
+                if self.client_id in server.players:
+                    server.game_manager.use_skill(self.client_id, "pull")
         elif message == "get":
             self._send_game_state(server)
 
