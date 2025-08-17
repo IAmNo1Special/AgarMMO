@@ -1,45 +1,47 @@
-# `server.py` - Authoritative Game Server
+# Server-Side Architecture
 
-The `server.py` script is the authoritative server for the game. It manages the game state, client connections, and all game logic.
+The server-side of the game is now modularized into several components to improve organization, maintainability, and separation of concerns.
 
-## `ServerManager` Class
+## `server/main.py` - Server Entry Point
 
-The `ServerManager` class is the core of the server.
+This is the main entry point for the server application. It is responsible for:
+*   Initializing core game components like `GameManager` and `NetworkManager`.
+*   Starting the server's main loop.
 
-### Initialization (`__init__`)
+## `server/network_manager.py` - Network Management
 
-*   Initializes a `socket` for listening to client connections.
-*   Loads server, network, world, player, and game configurations.
-*   Initializes game state variables, including lists for players and food.
-*   Creates a thread lock for thread-safe operations.
+This module contains the `NetworkManager` class, which handles all network-related operations on the server side. Its responsibilities include:
+*   Binding the server socket and listening for incoming connections.
+*   Managing client connections, including rate limiting and handling disconnections.
+*   Creating and managing `ClientThread` instances for each connected client.
+*   Orchestrating the main server loop, which includes processing game updates and maintaining the tick rate.
 
-### Core Methods
+## `server/game_manager.py` - Game Logic Management
 
-*   **`connect_server()`**: Binds the server socket to the configured IP and port and starts listening for connections.
-*   **`connection_thread()`**: Runs in a separate thread to accept new client connections. It creates a `ClientThread` for each new connection.
-*   **`mainloop()`**: The main game loop of the server. It runs at a fixed tick rate and is responsible for:
-    *   Updating skill statuses.
-    *   Checking for collisions between players and food, and between players.
-    *   Replenishing the food supply.
-*   **`check_collision()`**: Handles collisions between players and food.
-*   **`player_collision()`**: Handles collisions between players.
-*   **`use_skill()`**: Applies the logic for player skills.
-*   **`get_serializable_players()`**: Converts the list of `Player` objects into a dictionary that can be serialized to JSON.
-*   **`shutdown()`**: Gracefully shuts down the server by closing all client connections and the main server socket.
+This module contains the `GameManager` class, which encapsulates all core game logic on the server side. Its responsibilities include:
+*   Initializing game entities like food.
+*   Handling collisions between players and food.
+*   Handling collisions between players (eating mechanics).
+*   Managing and applying player skills (e.g., "push" skill).
+*   Enforcing world boundaries for game objects.
+*   Generating new food items to maintain supply.
+*   Determining valid starting locations for new players.
+*   Providing serializable representations of game entities for client updates.
 
-## `ClientThread` Class
+## `server/client_handler.py` - Client Communication Handler
 
-The `ClientThread` class handles communication with a single client.
-
-### Core Methods
-
-*   **`run()`**: The main method for the client thread. It receives the player's name, creates a `Player` object, and then enters a loop to receive and handle messages from the client.
-*   **`_handle_message(message)`**: Parses messages from the client (e.g., "move", "push") and updates the game state accordingly.
-*   **`_send_game_state()`**: Sends the current game state (as a JSON object) to the client.
-*   **`cleanup()`**: Cleans up the connection when a client disconnects.
+This module contains the `ClientThread` class, which is responsible for managing communication with a single connected client. Each client has its own `ClientThread`. Its responsibilities include:
+*   Receiving player names during initial connection.
+*   Handling incoming messages from the client (e.g., movement commands, skill usage requests).
+*   Sending game state updates to its respective client.
+*   Managing the client's connection lifecycle (e.g., timeouts, disconnections).
 
 ## Dependencies
 
-*   `socket`, `threading`, `json`, `weakref`, `logging`: For networking, concurrency, data serialization, and logging.
-*   `entities/player.py`, `entities/food.py`: To create and manage player and food objects.
-*   `utils/config_loader.py`: For loading server and game configurations.
+*   `socket`, `threading`, `json`, `weakref`, `logging`, `select`: Core Python libraries for networking, concurrency, data serialization, and logging.
+*   `shared/config_loader.py`: For loading server and game configurations.
+*   `shared/entities/player.py`, `shared/entities/food.py`: To create and manage player and food objects.
+*   `server/game_manager.py`: Used by `server/network_manager.py` and `server/client_handler.py` for game logic.
+*   `server/network_manager.py`: The main server component.
+*   `server/client_handler.py`: Used by `server/network_manager.py` to handle individual clients.
+

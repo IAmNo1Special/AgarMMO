@@ -1,7 +1,7 @@
 # Skills configuration
 push_skill:
-  base_radius: 50
+  base_radius: 100
   radius_per_level: 10
-  push_force: 60
+  push_force: 100
   duration: 5
-  visual_color: [128, 128, 128, 128]
+  score_multiplier: 0.1

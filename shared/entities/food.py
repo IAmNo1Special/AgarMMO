@@ -2,8 +2,8 @@ from typing import Tuple
 from dataclasses import dataclass, asdict
 import random
 
-from entities.game_object import GameObject
-from utils.config_loader import food_cfg
+from shared.entities.game_object import GameObject
+from shared.config_loader import food_cfg
 
 @dataclass
 class Food(GameObject):

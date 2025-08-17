@@ -1,4 +1,4 @@
-from utils.config_loader import skills_cfg
+from shared.config_loader import skills_cfg
 
 class PushSkill:
     def __init__(self, level=1):

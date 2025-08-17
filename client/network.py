@@ -6,7 +6,7 @@ from typing import Any, Optional, Tuple, Dict, List, Union, Callable, TypeVar, T
 from dataclasses import dataclass
 from threading import Lock, RLock
 
-from utils.config_loader import network_cfg, game_cfg
+from shared.config_loader import network_cfg, game_cfg
 
 # Configure logging
 logger = logging.getLogger(__name__)

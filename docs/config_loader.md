@@ -1,4 +1,4 @@
-# `utils/config_loader.py` - Configuration Loader
+# `shared/config_loader.py` - Configuration Loader
 
 This utility script provides a simple way to load configuration from YAML files.
 

@@ -1,0 +1,208 @@
+import contextlib
+import os
+import time
+import pygame
+from client.network import Network
+from shared.config_loader import player_cfg, world_cfg, game_cfg, food_cfg, skills_cfg
+from client.rendering.game_renderer import GameRenderer
+from client.rendering.ui_renderer import UIRenderer
+from client.input_handler import InputHandler
+
+class Game:
+    def __init__(self):
+        # Initialize pygame
+        with contextlib.redirect_stdout(None):
+            pygame.init()
+
+        # Load configuration
+        self.load_config()
+        
+        # Game state
+        self.players = {}
+        self.balls = []
+        self.camera_x = 0
+        self.camera_y = 0
+        self.current_id = None
+        self.server = None
+        self.clock = pygame.time.Clock()
+        self.running = False
+        self.game_time = 0
+        
+        # Initialize window
+        self.init_window()
+
+        # Initialize renderers
+        self.game_renderer = GameRenderer(
+            WIN=self.WIN,
+            players=self.players,
+            balls=self.balls,
+            camera_x=self.camera_x,
+            camera_y=self.camera_y,
+            W=self.W,
+            H=self.H,
+            WORLD_W=self.WORLD_W,
+            WORLD_H=self.WORLD_H,
+            PLAYER_RADIUS=self.PLAYER_RADIUS,
+            BALL_RADIUS=self.BALL_RADIUS,
+            NAME_FONT=self.NAME_FONT,
+            PLAYER_COLORS=self.PLAYER_COLORS,
+            FOOD_COLORS=self.FOOD_COLORS
+        )
+        self.ui_renderer = UIRenderer(
+            WIN=self.WIN,
+            players=self.players,
+            game_time=self.game_time,
+            W=self.W,
+            H=self.H,
+            TIME_FONT=self.TIME_FONT,
+            SCORE_FONT=self.SCORE_FONT
+        )
+
+        # Initialize input handler
+        self.input_handler = InputHandler(
+            current_id=self.current_id,
+            players=self.players,
+            server=self.server,
+            W=self.W,
+            H=self.H,
+            PLAYER_RADIUS=self.PLAYER_RADIUS,
+            START_VEL=self.START_VEL
+        )
+    
+    def load_config(self):
+        """Load game configuration from config files"""
+        # Screen and world dimensions
+        self.W, self.H = world_cfg['screen_width'], world_cfg['screen_height']
+        self.WORLD_W, self.WORLD_H = world_cfg['world_width'], world_cfg['world_height']
+        self.BOUNDARY_PADDING = world_cfg['boundary']['padding']
+        
+        # Game constants
+        self.PLAYER_RADIUS = player_cfg['start_radius']
+        self.START_VEL = player_cfg['start_velocity']
+        self.BALL_RADIUS = food_cfg['radius']
+        
+        # Load fonts
+        self.NAME_FONT = pygame.font.SysFont(
+            game_cfg['fonts']['name_font']['name'],
+            game_cfg['fonts']['name_font']['size']
+        )
+        self.TIME_FONT = pygame.font.SysFont(
+            game_cfg['fonts']['time_font']['name'],
+            game_cfg['fonts']['time_font']['size']
+        )
+        self.SCORE_FONT = pygame.font.SysFont(
+            game_cfg['fonts']['score_font']['name'],
+            game_cfg['fonts']['score_font']['size']
+        )
+        
+        # Colors
+        self.PLAYER_COLORS = [tuple(color) for color in player_cfg['colors']]
+        self.FOOD_COLORS = [tuple(color) for color in food_cfg['colors']]
+    
+    def init_window(self):
+        """Initialize the game window"""
+        self.WIN = pygame.display.set_mode((self.W, self.H))
+        
+        # Set window position from config
+        window_x, window_y = game_cfg['window']['initial_position']
+        os.environ['SDL_VIDEO_WINDOW_POS'] = f"{window_x},{window_y}"
+        pygame.display.set_caption(game_cfg['window']['title'])
+
+    @staticmethod
+    def convert_time(t):
+        """Convert seconds to MM:SS format"""
+        if isinstance(t, str):
+            return t
+        
+        t = int(t)
+        if t < 60:
+            return f"{t}s"
+            
+        minutes = t // 60
+        seconds = t % 60
+        return f"{minutes}:{seconds:02d}"
+
+
+    def connect_to_server(self, name):
+        """Connect to the game server"""
+        self.server = Network()
+        if self.server.connect(name):
+            self.current_id = self.server.get_player_id()
+            # Update input handler with current_id and server
+            self.input_handler.current_id = self.current_id
+            self.input_handler.server = self.server
+            return self.current_id is not None
+        return False
+    
+    def get_game_state(self):
+        """Get the current game state from server"""
+        game_state = self.server.get_game_state()
+        if not isinstance(game_state, dict):
+            return False
+            
+        self.balls.clear() # Clear existing items
+        self.balls.extend(game_state.get("balls", [])) # Add new items
+        
+        self.players.clear() # Clear existing items
+        self.players.update(game_state.get("players", {})) # Update with new items
+        self.game_time = game_state.get("game_time", 0)
+        return True
+    
+    def draw(self):
+        """Draw the game state"""
+        if self.current_id not in self.players:
+            return
+            
+        player = self.players[self.current_id]
+        
+        # Update camera to follow player
+        self.game_renderer.camera_x = player["x"] - self.W // 2
+        self.game_renderer.camera_y = player["y"] - self.H // 2
+        
+        self.game_renderer.draw()
+        
+        # Update UI renderer with current game time and player score
+        self.ui_renderer.game_time = self.game_time
+        self.ui_renderer.players = self.players # Ensure UI renderer has latest player data
+        self.ui_renderer.draw_ui(player["score"])
+
+    def run(self, player_name):
+        """Run the main game loop"""
+        # Connect to server
+        if not self.connect_to_server(player_name):
+            print("Failed to connect to server")
+            return
+        
+        # Get initial game state
+        if not self.get_game_state():
+            print("Failed to get initial game state")
+            return
+        
+        # Main game loop
+        self.running = True
+        while self.running:
+            # Handle events
+            self.running = self.input_handler.handle_events()
+            
+            # Update game state
+            if not self.get_game_state():
+                print("Error getting game state")
+                break
+            
+            # Handle movement
+            self.input_handler.handle_movement()
+            
+            # Draw everything
+            self.draw()
+            
+            # Cap the frame rate
+            self.clock.tick(game_cfg['fps'])
+        
+        # Clean up
+        self.cleanup()
+    
+    def cleanup(self):
+        """Clean up resources"""
+        if self.server:
+            self.server.disconnect()
+        pygame.quit()

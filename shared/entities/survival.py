@@ -1,7 +1,7 @@
 # shared/survival.py
 from dataclasses import dataclass, asdict
 
-from utils.config_loader import survival_cfg
+from shared.config_loader import survival_cfg
 
 @dataclass
 class SurvivalStats:

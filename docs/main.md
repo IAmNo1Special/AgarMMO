@@ -1,4 +1,4 @@
-# `main.py` - Client Entry Point
+# `client/main.py` - Client Entry Point
 
 The `main.py` script is the entry point for the client-side application.
 
@@ -21,5 +21,5 @@ The `main.py` script is the entry point for the client-side application.
 ## Dependencies
 
 *   `pygame`: For graphics and window management.
-*   `game.py`: Contains the main `Game` class.
-*   `utils.config_loader.py`: To load game configuration settings.
+*   `client/game.py`: Contains the main `Game` class.
+*   `shared/config_loader.py`: To load game configuration settings.

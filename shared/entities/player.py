@@ -1,7 +1,7 @@
 import random
-from entities.survival import SurvivalStats, SurvivalSystem
-from entities.skills.push import PushSkill
-from utils.config_loader import player_cfg
+from shared.entities.survival import SurvivalStats, SurvivalSystem
+from shared.entities.skills.push import PushSkill
+from shared.config_loader import player_cfg
 
 
 class Player:

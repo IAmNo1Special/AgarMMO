@@ -14,5 +14,5 @@ This project is a client-server based multiplayer game where players control blo
 
 ## How to Run
 
-1. **Start the server**: `uv run server.py`
-2. **Start the client**: `uv run main.py`
+1. **Start the server**: `uv run server/main.py`
+2. **Start the client**: `uv run client/main.py`

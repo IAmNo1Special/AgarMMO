@@ -1,4 +1,4 @@
-# `network.py` - Client-Side Networking
+# `client/network.py` - Client-Side Networking
 
 The `network.py` file provides the `Network` class, which handles all client-side communication with the game server.
 
@@ -21,4 +21,4 @@ The `network.py` file provides the `Network` class, which handles all client-sid
 ## Dependencies
 
 *   `socket`, `json`, `logging`: For networking, data serialization, and logging.
-*   `utils.config_loader.py`: For loading network configuration.
+*   `shared/config_loader.py`: For loading network configuration.
