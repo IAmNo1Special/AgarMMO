@@ -1,0 +1,52 @@
+# Game configuration
+fps: 60
+
+# Font configurations
+fonts:
+  name_font: 
+    name: "comicsans"
+    size: 20
+  time_font:
+    name: "comicsans"
+    size: 30
+  score_font:
+    name: "comicsans"
+    size: 26
+  antialiasing: 1 # Added antialiasing setting
+
+# Window settings
+window:
+  title: "Blobs"
+  position: [0, 0]  # x, y coordinates for window position
+  initial_position: [0, 30]  # Initial SDL window position
+
+# Input validation
+validation:
+  min_name_length: 1
+  max_name_length: 19
+
+# Game balancing
+min_velocity: 1
+player_velocity_score_divisor: 14
+diagonal_movement_factor: 0.7071
+player_eating_threshold: 1.1
+
+# Colors
+colors:
+  background: [255, 255, 255]
+  text: [0, 0, 0]
+
+# UI settings
+ui:
+  player_name_offset_y: 5
+  scoreboard_start_y: 25
+  scoreboard_offset_x: 10
+  scoreboard_item_spacing_y: 20
+  time_display_position: [10, 10]
+  scoreboard_title_offset_y: 5
+  score_display_position_x: 10
+  score_display_offset_y: 15
+
+# Performance
+tick_rate: 60.0
+error_sleep_duration: 1

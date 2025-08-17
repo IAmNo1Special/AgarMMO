@@ -1,0 +1,8 @@
+# Server configuration
+start_radius: 7
+mass_loss_time: 7
+min_players: 1
+max_players: 10
+ball_count:
+  min: 500
+  max: 1000

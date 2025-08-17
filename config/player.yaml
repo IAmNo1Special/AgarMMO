@@ -1,0 +1,19 @@
+# Player configuration
+start_radius: 10
+start_velocity: 10
+colors:
+  - [255, 0, 0]      # red
+  - [255, 128, 0]    # orange
+  - [255, 255, 0]    # yellow
+  - [128, 255, 0]    # lime
+  - [0, 255, 0]      # green
+  - [0, 255, 128]    # mint
+  - [0, 255, 255]    # cyan
+  - [0, 128, 255]    # light blue
+  - [0, 0, 255]      # blue
+  - [128, 0, 255]    # purple
+  - [255, 0, 255]    # magenta
+  - [255, 0, 128]    # pink
+  - [128, 128, 128]  # gray
+  - [0, 0, 0]        # black
+

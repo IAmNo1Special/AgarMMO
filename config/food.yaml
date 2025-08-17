@@ -1,0 +1,16 @@
+# Food configuration
+radius: 5
+spawn_amount: 1000  # Number of food items to spawn initially
+respawn_amount: 10  # Number of food items to respawn when below threshold
+min_amount: 500     # Minimum number of food items before respawning
+growth_amount: 0.5 # Added food growth amount
+colors:
+  - [255, 0, 0]      # red
+  - [0, 255, 0]      # green
+  - [0, 0, 255]      # blue
+  - [255, 255, 0]    # yellow
+  - [255, 0, 255]    # magenta
+  - [0, 255, 255]    # cyan
+  - [255, 128, 0]    # orange
+  - [128, 0, 255]    # purple
+  - [255, 0, 128]    # pink

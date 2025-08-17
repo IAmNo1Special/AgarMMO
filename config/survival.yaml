@@ -1,0 +1,37 @@
+max_health: 100.0
+max_calories: 3000.0      # energy
+max_hydration: 5000.0     # abstract units (ml-like)
+max_blood: 5000.0
+
+# Initial stats
+initial_stats:
+  health: 100.0
+  calories: 3000.0
+  hydration: 5000.0
+  blood: 5000.0
+  temperature: 37.0
+
+# base drain per second (idle)
+calories_drain_idle: 0.08
+hydration_drain_idle: 0.18
+
+# multipliers
+move_mult: 1.5         # when moving
+sprint_mult: 2.5       # when sprinting
+crafting_mult: 1.2
+
+# penalties
+starve_hp_loss: 0.06
+dehydrate_hp_loss: 0.12
+
+# bleeding / conditions
+bleed_loss_per_sec: 6.0
+low_blood_hp_loss: 0.06   # < 3000
+low_blood_threshold: 3000.0 # Added low blood threshold
+infection_hp_loss: 0.025
+
+# temperature thresholds
+hypothermia_f: 30.0
+heatstroke_f: 102.2
+hypothermia_hp_loss: 0.06
+heatstroke_hydration_bonus_drain: 0.32

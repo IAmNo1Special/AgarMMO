@@ -1,0 +1,14 @@
+# World configuration
+screen_width: 800
+screen_height: 415
+world_width: 3200
+world_height: 1660
+
+# World boundaries
+boundary:
+  color: [200, 200, 200]  # RGB color for the map boundary
+  line_width: 2  # Width of the boundary line in pixels
+  padding: 20
+
+# Start location
+start_location_attempts: 100
