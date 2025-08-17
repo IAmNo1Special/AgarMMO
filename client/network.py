@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from threading import Lock, RLock
 
 from shared.config_loader import network_cfg, game_cfg
+from shared.packets import Packet, ConnectPacket, MovePacket, SkillPacket, GetGameStatePacket, \
+    PlayerIdPacket, GameStatePacket, UsernameTakenPacket, ServerFullPacket, PingPacket, PongPacket
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -156,24 +158,27 @@ class Network:
                 self._reconnect_attempts = 0
                 self._last_activity = time.time()
                 
-                # Send player name
-                name_encoded = name.encode('utf-8')
-                name_length = len(name_encoded).to_bytes(4, 'big')
-                self._send_all(name_length + name_encoded)
+                # Send connect packet
+                connect_packet = ConnectPacket(name=name)
+                self._send_message(connect_packet.to_json().encode('utf-8'))
                 
-                # Get player ID
-                response = self._recv_message()
-                if not response:
+                # Get response
+                response_data = self._recv_message()
+                if not response_data:
                     raise ConnectionError("No response from server")
-                    
-                if response.startswith(network_cfg['protocol']['player_id_prefix'].encode('utf-8')):
-                    self._player_id = response[len(network_cfg['protocol']['player_id_prefix']):].decode('utf-8')
+                
+                response_packet = Packet.from_json(response_data.decode('utf-8'))
+
+                if isinstance(response_packet, PlayerIdPacket):
+                    self._player_id = response_packet.player_id
                     logger.info(f"Connected with player ID: {self._player_id}")
                     return True
-                elif response == network_cfg['protocol']['username_taken_message'].encode('utf-8'):
-                    raise ConnectionError("Username is already taken")
+                elif isinstance(response_packet, UsernameTakenPacket):
+                    raise ConnectionError(response_packet.message)
+                elif isinstance(response_packet, ServerFullPacket):
+                    raise ConnectionError(response_packet.message)
                 else:
-                    raise ProtocolError(f"Unexpected server response: {response}")
+                    raise ProtocolError(f"Unexpected server response packet type: {response_packet.type}")
                     
             except socket.timeout as e:
                 raise TimeoutError(f"Connection timeout after {connect_timeout} seconds") from e
@@ -282,7 +287,8 @@ class Network:
                 self._reconnect_attempts = 0
                 
                 # Notify server this is a reconnection
-                self.send(f"reconnect {self._player_id}")
+                reconnect_packet = PlayerIdPacket(player_id=self._player_id) # Reusing PlayerIdPacket for reconnect
+                self.send(reconnect_packet)
                 logger.info("Reconnection successful")
                 
         except Exception as e:
@@ -301,7 +307,8 @@ class Network:
                     # Send disconnect notification if connected
                     if self._connected and self._player_id:
                         try:
-                            self._send_message(f"disconnect {self._player_id}".encode('utf-8'))
+                            # No explicit disconnect packet, just close
+                            pass
                         except:
                             pass  # Best effort
                     
@@ -330,53 +337,17 @@ class Network:
             self._handle_connection_error(e)
             raise ConnectionError("Failed to send message") from e
 
-    def send(self, data: Union[str, Dict[str, Any]], **kwargs) -> bool:
-        """Send data to the server.
-        
-        This is a backwards-compatible wrapper around the new send method.
-        """
-        return self._send_impl(data, **kwargs)
-        
-    def receive(self, buffer_size: int = 4096, **kwargs) -> Optional[Dict[str, Any]]:
-        """Legacy receive method for backward compatibility."""
-        try:
-            return self._receive_impl(**kwargs)
-        except (TimeoutError, ConnectionError, ProtocolError):
-            return None
-
-    def _send_data(self, data: bytes) -> bool:
-        """Legacy method for backward compatibility."""
-        try:
-            self._send_message(data)
-            return True
-        except ConnectionError:
-            return False
-            
-    def _send_impl(self, data: Union[str, Dict[str, Any]], **kwargs) -> bool:
-        """Send data to the server.
-        
-        Args:
-            data: Data to send (string, dict, or bytes)
-            
-        Returns:
-            bool: True if send was successful, False otherwise
-        """
+    def send(self, packet: Packet) -> bool:
+        """Send a Packet object to the server."""
         if not self._connected:
             logger.warning("Cannot send: not connected to server")
             return False
             
         with self._lock:
             try:
-                if isinstance(data, dict):
-                    message = json.dumps(data, ensure_ascii=False).encode('utf-8')
-                elif isinstance(data, str):
-                    message = data.encode('utf-8')
-                else:
-                    raise ValueError(f"Unsupported data type: {type(data)}")
-                    
+                message = packet.to_json().encode('utf-8')
                 self._send_message(message)
                 return True
-                
             except (TypeError, json.JSONEncodeError) as e:
                 logger.error(f"JSON encode error: {e}")
                 return False
@@ -384,17 +355,8 @@ class Network:
                 logger.error(f"Send error: {e}")
                 return False
                 
-    def _receive_impl(self, **kwargs) -> Optional[Dict[str, Any]]:
-        """Receive and parse a message from the server.
-        
-        Returns:
-            Parsed message as dict, or None if connection was closed
-            
-        Raises:
-            TimeoutError: If the operation times out
-            ProtocolError: If there's a protocol violation
-            ConnectionError: If the connection fails
-        """
+    def receive(self) -> Optional[Packet]:
+        """Receive and parse a message from the server."""
         with self._lock:
             if not self._connected or not self._socket:
                 raise ConnectionError("Not connected to server")
@@ -407,18 +369,20 @@ class Network:
                 
             self._last_activity = time.time()
             
-            # Handle ping/pong
-            if data == network_cfg['protocol']['ping_message'].encode('utf-8'):
-                self._send_message(network_cfg['protocol']['pong_message'].encode('utf-8'))
-                return self.receive(**kwargs)  # Get next message
-                
-            # Try to parse as JSON
+            # Try to parse as JSON and then as a Packet
             try:
-                if data:
-                    return json.loads(data.decode('utf-8'))
-                return {}
+                packet = Packet.from_json(data.decode('utf-8'))
+                
+                # Handle ping/pong at the network layer
+                if isinstance(packet, PingPacket):
+                    self.send(PongPacket())
+                    return self.receive() # Get next message
+                
+                return packet
             except json.JSONDecodeError as e:
                 raise ProtocolError(f"Invalid JSON received: {data}") from e
+            except ValueError as e: # For unknown packet types from Packet.from_json
+                raise ProtocolError(f"Protocol error: {e}") from e
                 
     def is_connected(self) -> bool:
         """Check if the connection is active."""
@@ -450,59 +414,44 @@ class Network:
         """Ensure proper cleanup when the object is garbage collected."""
         self.disconnect()
 
-    def _send_with_retry(self, data: Union[str, Dict[str, Any]], max_retries: int = network_cfg['send_retries'], use_json: bool = True) -> Any:
-        """Send data with retry logic.
-        
-        Args:
-            data: Data to send
-            max_retries: Maximum number of retry attempts
-            use_json: Whether to parse response as JSON
-            
-        Returns:
-            The response data or None if failed
-        """
+    def _send_with_retry(self, packet: Packet, max_retries: int = network_cfg['send_retries']) -> Optional[Packet]:
+        """Send data with retry logic."""
         for attempt in range(max_retries + 1):
             try:
                 if not self.is_connected():
                     if not self.reconnect():
                         continue
                         
-                # Send the data
-                if not self.send(data):
+                # Send the packet
+                if not self.send(packet):
                     continue
-                    
+                        
                 # Receive response
-                response = self.receive()
-                if response is None:
-                    print("[NETWORK] Failed to receive response data")
+                response_packet = self.receive()
+                if response_packet is None:
+                    print("[NETWORK] Failed to receive response packet")
                     continue
-                    
-                if use_json and isinstance(response, str):
-                    try:
-                        return json.loads(response)
-                    except json.JSONDecodeError as e:
-                        print(f"[NETWORK] Error decoding JSON response: {e}")
-                        continue
-                return response
-                
-            except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                        
+                return response_packet
+                        
+            except (json.JSONDecodeError, UnicodeDecodeError, ProtocolError) as e:
                 print(f"[NETWORK] Error processing response: {e}")
                 if attempt >= max_retries:
                     break
                 time.sleep(network_cfg['retry_sleep_duration'])
-                
+                        
             except socket.timeout:
                 print("[NETWORK] Receive timed out")
                 if attempt >= max_retries:
                     break
-                    
+                        
             except Exception as e:
                 print(f"[NETWORK] Error in send/receive (attempt {attempt + 1}/{max_retries + 1}): {e}")
                 self._connected = False
                 if attempt >= max_retries:
                     break
                 time.sleep(network_cfg['retry_sleep_duration'])
-                
+                        
         print("[NETWORK] Max retries reached, giving up")
         return None
 
@@ -510,16 +459,18 @@ class Network:
         """
         Request and return the current game state from the server.
         """
-        return self._send_with_retry("get", use_json=True)
+        response = self._send_with_retry(GetGameStatePacket())
+        if isinstance(response, GameStatePacket):
+            return response.to_dict() # Convert back to dict for existing game logic
+        return None
         
     def ping(self) -> bool:
         """
         Send a ping to the server to check connection status.
         """
         try:
-            response = self._send_with_retry("ping", use_json=False)
-            return response == "pong"
+            response = self._send_with_retry(PingPacket())
+            return isinstance(response, PongPacket)
         except Exception as e:
             print(f"[NETWORK] Ping failed: {e}")
             return False
-

@@ -7,6 +7,7 @@ from shared.config_loader import player_cfg, world_cfg, game_cfg, food_cfg, skil
 from client.rendering.game_renderer import GameRenderer
 from client.rendering.ui_renderer import UIRenderer
 from client.input_handler import InputHandler
+from shared.packets import PlayerIdPacket, UsernameTakenPacket, ServerFullPacket, GameStatePacket, ConnectPacket
 
 class Game:
     def __init__(self):
@@ -126,26 +127,30 @@ class Game:
     def connect_to_server(self, name):
         """Connect to the game server"""
         self.server = Network()
-        if self.server.connect(name):
-            self.current_id = self.server.get_player_id()
-            # Update input handler with current_id and server
-            self.input_handler.current_id = self.current_id
-            self.input_handler.server = self.server
-            return self.current_id is not None
-        return False
+        try:
+            if self.server.connect(name):
+                self.current_id = self.server.get_player_id()
+                # Update input handler with current_id and server
+                self.input_handler.current_id = self.current_id
+                self.input_handler.server = self.server
+                return self.current_id is not None
+            return False
+        except Exception as e:
+            print(f"Connection failed: {e}")
+            return False
     
     def get_game_state(self):
         """Get the current game state from server"""
-        game_state = self.server.get_game_state()
-        if not isinstance(game_state, dict):
+        game_state_data = self.server.get_game_state()
+        if not game_state_data:
             return False
             
         self.balls.clear() # Clear existing items
-        self.balls.extend(game_state.get("balls", [])) # Add new items
+        self.balls.extend(game_state_data.get("balls", [])) # Add new items
         
         self.players.clear() # Clear existing items
-        self.players.update(game_state.get("players", {})) # Update with new items
-        self.game_time = game_state.get("game_time", 0)
+        self.players.update(game_state_data.get("players", {})) # Update with new items
+        self.game_time = game_state_data.get("game_time", 0)
         return True
     
     def draw(self):

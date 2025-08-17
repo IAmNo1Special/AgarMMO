@@ -11,6 +11,8 @@ from shared.config_loader import network_cfg, game_cfg, world_cfg, skills_cfg
 
 from shared.entities.player import Player
 from shared.entities.food import Food
+from shared.packets import Packet, ConnectPacket, MovePacket, SkillPacket, GetGameStatePacket, \
+    PlayerIdPacket, GameStatePacket, UsernameTakenPacket, ServerFullPacket, PingPacket, PongPacket
 
 logger = logging.getLogger(__name__)
 
@@ -39,39 +41,35 @@ class ClientThread(threading.Thread):
         # Initial name reception and player creation
         try:
             self.conn.settimeout(network_cfg['initial_name_timeout'])
-            name_length_bytes = self.conn.recv(4)
-            if not name_length_bytes or len(name_length_bytes) != 4:
-                logger.error(f"[ERROR] Client {self.client_id}: Failed to receive name length")
+            
+            # Receive connect packet
+            initial_data = self._recv_message()
+            if not initial_data:
+                logger.error(f"[ERROR] Client {self.client_id}: No initial data received.")
                 self.running = False
                 return
-            
-            name_length = int.from_bytes(name_length_bytes, 'big')
-            if name_length <= 0 or name_length > game_cfg['validation']['max_name_length']: # Max name length
-                logger.error(f"[ERROR] Client {self.client_id}: Invalid name length: {name_length}")
+
+            initial_packet = Packet.from_json(initial_data.decode('utf-8'))
+
+            if not isinstance(initial_packet, ConnectPacket):
+                logger.error(f"[ERROR] Client {self.client_id}: Expected ConnectPacket, got {initial_packet.type}")
                 self.running = False
                 return
-            
-            name_bytes = b''
-            while len(name_bytes) < name_length:
-                chunk = self.conn.recv(min(network_cfg['buffer_size'], name_length - len(name_bytes)))
-                if not chunk:
-                    break
-                name_bytes += chunk
-            
-            name = name_bytes.decode('utf-8')
+
+            name = initial_packet.name
 
             with server.lock:
                 if any(p.name == name for p in server.players.values()):
                     logger.warning(f"[ERROR] Client {self.client_id}: Username '{name}' is already taken.")
-                    self.conn.sendall(network_cfg['protocol']['username_taken_message'].encode('utf-8'))
+                    self._send_message(UsernameTakenPacket(message=network_cfg['protocol']['username_taken_message']).to_json().encode('utf-8'))
                     self.running = False
                     return
 
             logger.info(f"[LOG] Player '{name}' (ID: {self.client_id}) connected.")
             
             # Send player ID back to client
-            response = f"{network_cfg['protocol']['player_id_prefix']}{self.client_id}".encode('utf-8')
-            self.conn.sendall(len(response).to_bytes(4, 'big') + response)
+            player_id_packet = PlayerIdPacket(player_id=str(self.client_id))
+            self._send_message(player_id_packet.to_json().encode('utf-8'))
 
             x, y = server.game_manager.get_start_location(server.players)
             server.players[self.client_id] = Player(self.client_id, name, x, y)
@@ -110,55 +108,95 @@ class ClientThread(threading.Thread):
                     if len(buffer) < 4 + msg_length:
                         break
                         
-                    message = buffer[4:4+msg_length]
+                    message_bytes = buffer[4:4+msg_length]
                     buffer = buffer[4+msg_length:]
-                    self._handle_message(server, message.decode('utf-8'))
-
+                    
+                    try:
+                        packet = Packet.from_json(message_bytes.decode('utf-8'))
+                        self._handle_packet(server, packet)
+                    except (json.JSONDecodeError, ValueError) as e:
+                        logger.error(f"Client {self.client_id}: Invalid packet received: {e}")
+                        # Optionally send an error packet back to the client
+                        
             except (socket.timeout, ConnectionResetError, ConnectionAbortedError):
                 break
             except Exception as e:
                 logger.error(f"Error handling client {self.client_id}: {e}", exc_info=True)
                 break
 
-    def _handle_message(self, server, message):
-        if message.startswith("move "):
-            parts = message.split()
-            if len(parts) == 3:
-                try:
-                    dx, dy = float(parts[1]), float(parts[2])
-                    with server.lock:
-                        if self.client_id in server.players:
-                            player = server.players[self.client_id]
-                            player.move(dx, dy, *server.game_manager.world_dimensions, 
-                                      world_cfg['boundary']['padding'])
-                except (ValueError, IndexError) as e:
-                    logger.warning(f"Invalid move command: {message}")
-        elif message == "push":
+    def _handle_packet(self, server, packet: Packet):
+        if isinstance(packet, MovePacket):
             with server.lock:
                 if self.client_id in server.players:
-                    server.game_manager.use_skill(self.client_id, "push")
-        elif message == "pull":
+                    player = server.players[self.client_id]
+                    player.move(packet.dx, packet.dy, *server.game_manager.world_dimensions, 
+                              world_cfg['boundary']['padding'])
+        elif isinstance(packet, SkillPacket):
             with server.lock:
                 if self.client_id in server.players:
-                    server.game_manager.use_skill(self.client_id, "pull")
-        elif message == "get":
+                    server.game_manager.use_skill(self.client_id, packet.skill_name)
+        elif isinstance(packet, GetGameStatePacket):
             self._send_game_state(server)
+        elif isinstance(packet, PingPacket):
+            self._send_message(PongPacket().to_json().encode('utf-8'))
+        elif isinstance(packet, PlayerIdPacket): # Reconnect packet
+            logger.info(f"Client {self.client_id} reconnected with ID: {packet.player_id}")
+        else:
+            logger.warning(f"Client {self.client_id}: Unhandled packet type: {packet.type}")
 
     def _send_game_state(self, server):
         with server.lock:
             if self.client_id not in server.players:
                 return
                 
-            game_state = {
-                "balls": [b.to_dict() for b in server.balls],
-                "players": server.game_manager.get_serializable_players(),
-                "game_time": time.time() - server.start_time if server.start else 0
-            }
-            response = json.dumps(game_state).encode('utf-8')
+            game_state = GameStatePacket(
+                balls=[b.to_dict() for b in server.balls],
+                players=server.game_manager.get_serializable_players(),
+                game_time=time.time() - server.start_time if server.start else 0
+            )
+            response = game_state.to_json().encode('utf-8')
             try:
-                self.conn.sendall(len(response).to_bytes(4, 'big') + response)
+                self._send_message(response)
             except (ConnectionResetError, BrokenPipeError):
                 self.running = False
+
+    def _send_message(self, data: bytes) -> None: 
+        """Send a message with length prefix."""
+        if not self.conn:
+            raise ConnectionResetError("Connection is closed")
+        
+        try:
+            length = len(data).to_bytes(4, 'big')
+            self.conn.sendall(length + data)
+        except (socket.error, OSError) as e:
+            logger.error(f"Error sending message to client {self.client_id}: {e}")
+            raise
+
+    def _recv_message(self) -> Optional[bytes]:
+        """Receive a message with length prefix."""
+        if not self.conn:
+            return None
+        
+        try:
+            length_bytes = self.conn.recv(4)
+            if not length_bytes:
+                return None
+            
+            msg_length = int.from_bytes(length_bytes, 'big')
+            
+            chunks = []
+            bytes_received = 0
+            while bytes_received < msg_length:
+                chunk = self.conn.recv(min(network_cfg['buffer_size'], msg_length - bytes_received))
+                if not chunk:
+                    return None
+                chunks.append(chunk)
+                bytes_received += len(chunk)
+            
+            return b''.join(chunks)
+        except (socket.error, OSError) as e:
+            logger.error(f"Error receiving message from client {self.client_id}: {e}")
+            return None
 
     def stop(self):
         self.running = False

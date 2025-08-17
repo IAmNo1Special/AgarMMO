@@ -2,6 +2,7 @@ import pygame
 from typing import Dict, Any
 
 from shared.config_loader import game_cfg
+from shared.packets import MovePacket, SkillPacket
 
 class InputHandler:
     def __init__(self, current_id: str, players: Dict[str, Any], server: Any, W: int, H: int, PLAYER_RADIUS: int, START_VEL: int):
@@ -21,9 +22,9 @@ class InputHandler:
                 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button
-                    self.server.send("push")
+                    self.server.send(SkillPacket(skill_name="push"))
                 elif event.button == 3: # Right mouse button
-                    self.server.send("pull")
+                    self.server.send(SkillPacket(skill_name="pull"))
                     
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -59,4 +60,4 @@ class InputHandler:
             
         # Only send movement if any key is pressed
         if dx != 0 or dy != 0:
-            self.server.send(f"move {dx} {dy}")
+            self.server.send(MovePacket(dx=dx, dy=dy))
