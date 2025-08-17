@@ -22,6 +22,8 @@ class InputHandler:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button
                     self.server.send("push")
+                elif event.button == 3: # Right mouse button
+                    self.server.send("pull")
                     
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:

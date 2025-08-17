@@ -1,7 +1,18 @@
 # Skills configuration
 push_skill:
-  base_radius: 100
+  base_radius: 50
   radius_per_level: 10
   push_force: 100
   duration: 5
-  score_multiplier: 0.1
+  score_multiplier: 1.0
+  size_threshold_multiplier: 1.2 # Added size threshold for push skill
+  visual_color: [255, 165, 0, 100] # Orange with transparency
+
+pull_skill:
+  base_radius: 50
+  radius_per_level: 10
+  pull_force: 100
+  duration: 5
+  score_multiplier: 1.0
+  size_threshold_multiplier: 1.2 # Added size threshold for pull skill
+  visual_color: [0, 165, 255, 100] # Blue with transparency

@@ -1,6 +1,7 @@
 import random
 from shared.entities.survival import SurvivalStats, SurvivalSystem
 from shared.entities.skills.push import PushSkill
+from shared.entities.skills.pull import PullSkill
 from shared.config_loader import player_cfg
 
 
@@ -20,10 +21,13 @@ class Player:
         self.stats = SurvivalStats()
         self._survival = SurvivalSystem()
         self.skills = {
-            'push': PushSkill()
+            'push': PushSkill(),
+            'pull': PullSkill()
         }
         self.push_skill_active = False
         self.push_skill_end_time = 0
+        self.pull_skill_active = False
+        self.pull_skill_end_time = 0
 
     def __str__(self):
         return f"Player(id={self.id}, name='{self.name}', score={self.score}, x={self.x}, y={self.y})"
@@ -41,6 +45,9 @@ class Player:
             "score": self.score,
             "color": self.color,
             "push_skill_active": self.push_skill_active,
+            "push_radius": getattr(self, 'push_radius', 0),
+            "pull_skill_active": self.pull_skill_active,
+            "pull_radius": getattr(self, 'pull_radius', 0),
         }
 
     def move(self, dx, dy, world_w, world_h, padding):

@@ -76,18 +76,36 @@ class GameRenderer:
             # Draw push radius if active
             if p.get('push_skill_active', False):
                 push_radius = p.get('push_radius', 0)
-                if push_radius > 0:
+                display_push_radius = push_radius
+                if display_push_radius > 0:
                     surface = pygame.Surface(
-                        (push_radius * 2, push_radius * 2), 
+                        (display_push_radius * 2, display_push_radius * 2), 
                         pygame.SRCALPHA
                     )
                     pygame.draw.circle(
                         surface, 
                         skills_cfg['push_skill']['visual_color'], 
-                        (push_radius, push_radius), 
-                        push_radius
+                        (display_push_radius, display_push_radius), 
+                        display_push_radius
                     )
-                    self.WIN.blit(surface, (draw_x - push_radius, draw_y - push_radius))
+                    self.WIN.blit(surface, (draw_x - display_push_radius, draw_y - display_push_radius))
+            
+            # Draw pull radius if active
+            if p.get('pull_skill_active', False):
+                pull_radius = p.get('pull_radius', 0)
+                display_pull_radius = pull_radius
+                if display_pull_radius > 0:
+                    surface = pygame.Surface(
+                        (display_pull_radius * 2, display_pull_radius * 2), 
+                        pygame.SRCALPHA
+                    )
+                    pygame.draw.circle(
+                        surface, 
+                        skills_cfg['pull_skill']['visual_color'], 
+                        (display_pull_radius, display_pull_radius), 
+                        display_pull_radius
+                    )
+                    self.WIN.blit(surface, (draw_x - display_pull_radius, draw_y - display_pull_radius))
             
             # Draw player name
             text = self.NAME_FONT.render(p["name"], game_cfg['fonts']['antialiasing'], game_cfg['colors']['text'])
