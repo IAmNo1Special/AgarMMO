@@ -22,7 +22,7 @@ This module contains the `GameManager` class, which encapsulates all core game l
 *   Initializing game entities like food.
 *   Handling collisions between players and food.
 *   Handling collisions between players (eating mechanics).
-*   Managing and applying player skills (e.g., "push" skill).
+*   Managing and applying player skills (e.g., "push" and "pull" skills), including logic for how skill effectiveness is influenced by the size of the affected object. For the push skill, if the target is too large, the player using the skill will be pushed away instead. For the pull skill, if the target is too large, the skill will have no effect.
 *   Enforcing world boundaries for game objects.
 *   Generating new food items to maintain supply.
 *   Determining valid starting locations for new players.
