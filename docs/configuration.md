@@ -37,6 +37,6 @@ The `config/` directory contains all the YAML configuration files for the game, 
     *   `boundary`: Settings for the world boundary (color, line width, padding).
 
 *   **`skills.yaml`**: Configuration for player skills:
-    *   `push_skill`: Settings for the "push" skill (radius, force, duration).
+    *   `push_skill`: Settings for the "push" skill (base radius, radius per level, push force, duration, visual color, **score multiplier**).
 
 *   **`survival.yaml`**: Configuration for the survival system (health, hunger, thirst, etc.).
