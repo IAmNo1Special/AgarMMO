@@ -60,17 +60,17 @@ class GameRenderer:
     
     def draw_players(self):
         """Draw all players"""
-        for p_id in sorted(self.players, key=lambda x: self.players[x]["score"]):
+        for p_id in sorted(self.players, key=lambda x: self.players[x]["radius"]):
             p = self.players[p_id]
             draw_x = p["x"] - self.camera_x
             draw_y = p["y"] - self.camera_y
             
-            # Draw player circle
+            # Draw player circle with radius from player object
             pygame.draw.circle(
                 self.WIN, 
                 p["color"], 
-                (draw_x, draw_y), 
-                self.PLAYER_RADIUS + round(p["score"])
+                (int(draw_x), int(draw_y)), 
+                int(p["radius"])
             )
             
             # Draw push radius if active
@@ -110,5 +110,5 @@ class GameRenderer:
             # Draw player name
             text = self.NAME_FONT.render(p["name"], game_cfg['fonts']['antialiasing'], game_cfg['colors']['text'])
             name_x = draw_x - text.get_width() / 2
-            name_y = draw_y - text.get_height() / 2 - (self.PLAYER_RADIUS + round(p["score"]) + game_cfg['ui']['player_name_offset_y'])
+            name_y = draw_y - text.get_height() / 2 - (p["radius"] + game_cfg['ui']['player_name_offset_y'])
             self.WIN.blit(text, (name_x, name_y))
