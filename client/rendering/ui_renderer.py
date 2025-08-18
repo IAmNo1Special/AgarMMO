@@ -38,13 +38,6 @@ class UIRenderer:
         # Ensure we have valid values
         player_age = player_age or 0
         growth_percentage = growth_percentage or 0
-        
-        # Check if we need to redraw the UI
-        current_state = {
-            'score': round(player_score),
-            'age': round(player_age),
-            'growth': round(growth_percentage)
-        }
 
         # Draw scoreboard
         sorted_players = sorted(
