@@ -171,8 +171,14 @@ class Game:
         player = self.players[self.current_id]
         
         # Update camera to follow player
-        self.game_renderer.camera_x = player["x"] - self.W // 2
-        self.game_renderer.camera_y = player["y"] - self.H // 2
+        # Update camera to follow player, clamping to world boundaries
+        camera_x_unclamped = player["x"] - self.W // 2
+        camera_y_unclamped = player["y"] - self.H // 2
+
+        # Clamp camera_x
+        self.game_renderer.camera_x = max(0, min(camera_x_unclamped, self.WORLD_W - self.W))
+        # Clamp camera_y
+        self.game_renderer.camera_y = max(0, min(camera_y_unclamped, self.WORLD_H - self.H))
         
         # Draw game objects
         self.game_renderer.draw()
