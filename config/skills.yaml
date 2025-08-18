@@ -6,6 +6,7 @@ push_skill:
   duration: 5
   score_multiplier: 1.0
   size_threshold_multiplier: 1.2 # Added size threshold for push skill
+  min_push_force_multiplier: 0.1 # Minimum force to apply for push skill
   visual_color: [255, 165, 0, 100] # Orange with transparency
 
 pull_skill:
@@ -15,4 +16,5 @@ pull_skill:
   duration: 5
   score_multiplier: 1.0
   size_threshold_multiplier: 1.2 # Added size threshold for pull skill
+  min_pull_force_multiplier: 0.1 # Minimum force to apply for pull skill
   visual_color: [0, 165, 255, 100] # Blue with transparency
