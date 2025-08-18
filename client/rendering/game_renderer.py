@@ -29,10 +29,7 @@ class GameRenderer:
         self.draw_boundary()
         self.draw_balls()
         self.draw_players()
-        
-        # Update display
-        pygame.display.flip()
-    
+
     def draw_boundary(self):
         """Draw the game world boundary"""
         boundary_rect = pygame.Rect(
