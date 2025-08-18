@@ -182,8 +182,7 @@ class Game:
         self.ui_renderer.players = self.players
         self.ui_renderer.draw_ui(player["score"], player["age"], player["growth_percentage"])
         
-        # Update only the changed portions of the screen
-        pygame.display.update()
+        
 
     def run(self, player_name):
         """Run the main game loop"""
@@ -226,6 +225,7 @@ class Game:
                 
                 # Draw the game
                 self.draw()
+                pygame.display.flip() # Perform the actual display update here
                 
             # Cap the frame rate
             self.clock.tick(120)  # Higher tick rate for smoother input handling
