@@ -116,13 +116,15 @@ class GameManager:
 
                                     if other_player_size > player_size * size_threshold:
                                         # Object is too big, push player away
-                                        scale = push_force * (1 - (distance / effective_push_radius))
+                                        min_push_force = push_skill.push_force * skills_cfg['push_skill']['min_push_force_multiplier']
+                                        scale = max(min_push_force, push_force * (1 - (distance / effective_push_radius)))
                                         player.x -= dx * scale / distance
                                         player.y -= dy * scale / distance
                                         self._enforce_world_boundaries(player)
                                     else:
                                         # Push object away
-                                        scale = push_force * (1 - (distance / effective_push_radius))
+                                        min_push_force = push_skill.push_force * skills_cfg['push_skill']['min_push_force_multiplier']
+                                        scale = max(min_push_force, push_force * (1 - (distance / effective_push_radius)))
                                         other_player.x += dx * scale / distance
                                         other_player.y += dy * scale / distance
                                         self._enforce_world_boundaries(other_player)
@@ -139,13 +141,15 @@ class GameManager:
 
                                     if ball_size > player_size * size_threshold:
                                         # Object is too big, push player away
-                                        scale = push_force * (1 - (distance / effective_push_radius))
+                                        min_push_force = push_skill.push_force * skills_cfg['push_skill']['min_push_force_multiplier']
+                                        scale = max(min_push_force, push_force * (1 - (distance / effective_push_radius)))
                                         player.x -= dx * scale / distance
                                         player.y -= dy * scale / distance
                                         self._enforce_world_boundaries(player)
                                     else:
                                         # Push object away
-                                        scale = push_force * (1 - (distance / effective_push_radius))
+                                        min_push_force = push_skill.push_force * skills_cfg['push_skill']['min_push_force_multiplier']
+                                        scale = max(min_push_force, push_force * (1 - (distance / effective_push_radius)))
                                         ball.x += dx * scale / distance
                                         ball.y += dy * scale / distance
                                         self._enforce_world_boundaries(ball)
