@@ -68,12 +68,14 @@ class GameManager:
                         # Player2 is significantly larger, eats player1
                         player2.increase_score(player1.score)
                         player1.score = 0
+                        player1.birth_time = time.time() # Reset birth time on respawn
                         player1.x, player1.y = self.get_start_location(players)
                         print(f"[GAME] {player2.name} (size: {player2.radius:.1f}) ATE {player1.name} (size: {player1.radius:.1f})")
                     elif (1 / size_ratio) > game_cfg['player_eating_threshold']:
                         # Player1 is significantly larger, eats player2
                         player1.increase_score(player2.score)
                         player2.score = 0
+                        player2.birth_time = time.time() # Reset birth time on respawn
                         player2.x, player2.y = self.get_start_location(players)
                         print(f"[GAME] {player1.name} (size: {player1.radius:.1f}) ATE {player2.name} (size: {player2.radius:.1f})")
 
@@ -97,6 +99,9 @@ class GameManager:
         
         with self.lock:
             for player_id, player in list(self.players.items()):
+                # Update player's age and size
+                player.update(current_time)
+
                 # Update push skill
                 if hasattr(player, 'push_skill_active') and player.push_skill_active:
                     if current_time > player.push_skill_end_time:
@@ -117,8 +122,8 @@ class GameManager:
                                     dx = other_player.x - player.x
                                     dy = other_player.y - player.y
                                     distance = max(skills_cfg['push_skill'].get('min_distance', 1), math.sqrt(dx*dx + dy*dy))
-                                    other_player_size = other_player.radius + (other_player.score if hasattr(other_player, 'score') else 0)
-                                    player_size = player.radius + player.score
+                                    other_player_size = other_player.radius
+                                    player_size = player.radius
                                     size_threshold = skills_cfg['push_skill']['size_threshold_multiplier']
 
                                     if other_player_size > player_size * size_threshold:
