@@ -33,7 +33,7 @@ if __name__ == "__main__":
     start_time = 0
 
     world_dimensions = (world_cfg['world_width'], world_cfg['world_height'])
-    player_start_radius = player_cfg['start_radius']
+    player_start_radius = player_cfg['size']['newborn']  # Use newborn size as starting radius
     player_colors = [tuple(color) for color in player_cfg['colors']]
 
     game_manager = GameManager(

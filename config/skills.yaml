@@ -4,17 +4,27 @@ push_skill:
   radius_per_level: 10
   push_force: 100
   duration: 5
-  score_multiplier: 1.0
-  size_threshold_multiplier: 1.2 # Added size threshold for push skill
+  size_threshold_multiplier: 1.2 # Size threshold for push skill (1.2x player radius)
   min_push_force_multiplier: 0.1 # Minimum force to apply for push skill
   visual_color: [255, 165, 0, 100] # Orange with transparency
+  # Physics settings
+  min_distance: 1  # Minimum distance for force calculation to prevent division by zero
+  force_scale: 1.0  # Global scaling factor for force application
 
 pull_skill:
   base_radius: 50
   radius_per_level: 10
   pull_force: 100
   duration: 5
-  score_multiplier: 1.0
-  size_threshold_multiplier: 1.2 # Added size threshold for pull skill
-  min_pull_force_multiplier: 0.1 # Minimum force to apply for pull skill
+  size_threshold_multiplier: 1.2 # Size threshold for pull skill (1.2x player radius)
   visual_color: [0, 165, 255, 100] # Blue with transparency
+  # Physics settings
+  min_distance: 1  # Minimum distance for force calculation to prevent division by zero
+  force_scale: 1.0  # Global scaling factor for force application
+
+# Global skill settings
+skill_settings:
+  # How often to update skill effects (in seconds)
+  update_interval: 0.05  # 20 updates per second
+  # Maximum number of objects to process per skill update (for performance)
+  max_objects_per_update: 50

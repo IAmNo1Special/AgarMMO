@@ -78,7 +78,7 @@ class Game:
         self.BOUNDARY_PADDING = world_cfg['boundary']['padding']
         
         # Game constants
-        self.PLAYER_RADIUS = player_cfg['start_radius']
+        self.PLAYER_RADIUS = player_cfg['size']['newborn']  # Use newborn size as starting radius
         self.START_VEL = player_cfg['start_velocity']
         self.BALL_RADIUS = food_cfg['radius']
         
@@ -102,12 +102,21 @@ class Game:
     
     def init_window(self):
         """Initialize the game window"""
-        self.WIN = pygame.display.set_mode((self.W, self.H))
-        
-        # Set window position from config
+        # Set window position from config before creating the window
         window_x, window_y = game_cfg['window']['initial_position']
         os.environ['SDL_VIDEO_WINDOW_POS'] = f"{window_x},{window_y}"
+        
+        # Initialize window with hardware acceleration and double buffering
+        self.WIN = pygame.display.set_mode(
+            (self.W, self.H),
+            pygame.DOUBLEBUF | pygame.HWSURFACE
+        )
+        
+        # Set window title
         pygame.display.set_caption(game_cfg['window']['title'])
+        
+        # Enable alpha blending for transparency
+        self.WIN.set_alpha(None)
 
     @staticmethod
     def convert_time(t):
@@ -148,13 +157,17 @@ class Game:
         self.balls.clear() # Clear existing items
         self.balls.extend(game_state_data.get("balls", [])) # Add new items
         
-        self.players.clear() # Clear existing items
-        self.players.update(game_state_data.get("players", {})) # Update with new items
+        # Update game state
+        self.players.clear()  # Clear existing items
+        self.players.update(game_state_data.get("players", {}))  # Update with new items
         self.game_time = game_state_data.get("game_time", 0)
         return True
     
     def draw(self):
         """Draw the game state"""
+        # Fill the screen with a solid color first
+        self.WIN.fill((50, 50, 50))  # Dark gray background
+        
         if self.current_id not in self.players:
             return
             
@@ -164,12 +177,16 @@ class Game:
         self.game_renderer.camera_x = player["x"] - self.W // 2
         self.game_renderer.camera_y = player["y"] - self.H // 2
         
+        # Draw game objects
         self.game_renderer.draw()
         
-        # Update UI renderer with current game time and player score
+        # Update UI renderer with current game state
         self.ui_renderer.game_time = self.game_time
-        self.ui_renderer.players = self.players # Ensure UI renderer has latest player data
-        self.ui_renderer.draw_ui(player["score"])
+        self.ui_renderer.players = self.players
+        self.ui_renderer.draw_ui(player["score"], player["age"], player["growth_percentage"])
+        
+        # Update only the changed portions of the screen
+        pygame.display.update()
 
     def run(self, player_name):
         """Run the main game loop"""
@@ -182,29 +199,39 @@ class Game:
         if not self.get_game_state():
             print("Failed to get initial game state")
             return
+            
+        # Initialize timing
+        last_update = time.time()
+        update_interval = 1.0 / 60.0  # 60 FPS
         
         # Main game loop
         self.running = True
         while self.running:
-            # Handle events
-            self.running = self.input_handler.handle_events()
+            current_time = time.time()
+            delta_time = current_time - last_update
             
-            # Update game state
-            if not self.get_game_state():
-                print("Error getting game state")
-                break
-            
-            # Handle movement
-            self.input_handler.handle_movement()
-            
-            # Draw everything
-            self.draw()
-            
+            # Update game state at a fixed interval
+            if delta_time >= update_interval:
+                last_update = current_time
+                
+                # Handle input events and check for quit
+                if not self.input_handler.handle_events():
+                    self.running = False
+                    break
+                    
+                # Handle player movement
+                self.input_handler.handle_movement()
+                
+                # Get updated game state
+                if not self.get_game_state():
+                    print("Failed to get updated game state")
+                    break
+                
+                # Draw the game
+                self.draw()
+                
             # Cap the frame rate
-            self.clock.tick(game_cfg['fps'])
-        
-        # Clean up
-        self.cleanup()
+            self.clock.tick(120)  # Higher tick rate for smoother input handling
     
     def cleanup(self):
         """Clean up resources"""

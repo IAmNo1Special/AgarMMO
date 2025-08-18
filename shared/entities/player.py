@@ -1,4 +1,5 @@
 import random
+import time
 from shared.entities.survival import SurvivalStats, SurvivalSystem
 from shared.entities.skills.push import PushSkill
 from shared.entities.skills.pull import PullSkill
@@ -9,7 +10,6 @@ class Player:
     def __init__(self, player_id, name, x=0, y=0):
         self.id = player_id
         self.name = name
-        self.radius = player_cfg['start_radius']
         self.start_velocity = player_cfg['start_velocity']
         self.color = random.choice(player_cfg['colors'])
         self.x = x
@@ -28,6 +28,11 @@ class Player:
         self.push_skill_end_time = 0
         self.pull_skill_active = False
         self.pull_skill_end_time = 0
+        
+        # Age and growth tracking
+        self.birth_time = time.time()
+        self.age = 0  # in seconds
+        self.radius = player_cfg['size']['newborn']  # Start at newborn size
 
     def __str__(self):
         return f"Player(id={self.id}, name='{self.name}', score={self.score}, x={self.x}, y={self.y})"
@@ -36,6 +41,9 @@ class Player:
         return str(self)
 
     def to_dict(self):
+        # Calculate growth percentage (0-100)
+        growth_pct = min(100.0, (self.age / player_cfg['size']['growth_duration']) * 100)
+        
         return {
             "id": self.id,
             "name": self.name,
@@ -44,23 +52,39 @@ class Player:
             "radius": self.radius,
             "score": self.score,
             "color": self.color,
+            "age": self.age,
+            "growth_percentage": growth_pct,
             "push_skill_active": self.push_skill_active,
             "push_radius": getattr(self, 'push_radius', 0),
             "pull_skill_active": self.pull_skill_active,
             "pull_radius": getattr(self, 'pull_radius', 0),
         }
 
+    def update(self, dt):
+        """Update player state, including age and size.
+        
+        The player's radius is determined purely by their age, growing from 'newborn' size
+        to 'adult' size over the configured growth duration.
+        """
+        # Update age
+        self.age = time.time() - self.birth_time
+        
+        # Calculate size based purely on age
+        # Linear interpolation between newborn and adult size based on age
+        growth_progress = min(self.age / player_cfg['size']['growth_duration'], 1.0)  # Clamp at 1.0 (100%)
+        self.radius = player_cfg['size']['newborn'] + \
+                     (player_cfg['size']['adult'] - player_cfg['size']['newborn']) * growth_progress
+
     def move(self, dx, dy, world_w, world_h, padding):
         """Move the player and enforce world boundaries."""
         new_x = self.x + dx * self.start_velocity
         new_y = self.y + dy * self.start_velocity
         
-        # Enforce world boundaries
-        radius = self.radius + self.score
-        self.x = max(padding + radius, min(new_x, world_w - padding - radius))
-        self.y = max(padding + radius, min(new_y, world_h - padding - radius))
+        # Enforce world boundaries using current radius
+        self.x = max(padding + self.radius, min(new_x, world_w - padding - self.radius))
+        self.y = max(padding + self.radius, min(new_y, world_h - padding - self.radius))
 
-    def grow(self, amount):
+    def increase_score(self, amount):
         """Increase the player's score."""
         self.score += amount
 
@@ -70,4 +94,4 @@ class Player:
         dx = self.x - other.x
         dy = self.y - other.y
         distance = math.sqrt(dx**2 + dy**2)
-        return distance < self.radius + self.score + other.radius
+        return distance < self.radius + other.radius

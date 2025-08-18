@@ -103,6 +103,10 @@ class NetworkManager:
                     # Process game updates
                     if self.start:
                         with self.lock:
+                            # Update all players (age and size)
+                            for player in self.players.values():
+                                player.update(delta_time)
+                                
                             self.game_manager.update_skills()
                             self.game_manager.check_collision(self.players, self.balls)
                             self.game_manager.player_collision(self.players)
