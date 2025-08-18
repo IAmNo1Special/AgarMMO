@@ -166,7 +166,7 @@ class Game:
     def draw(self):
         """Draw the game state"""
         # Fill the screen with a solid color first
-        self.WIN.fill((50, 50, 50))  # Dark gray background
+        
         
         if self.current_id not in self.players:
             return
