@@ -4,7 +4,7 @@ start_velocity: 10
 # Size configuration (in game units)
 size:
   newborn: 10      # Starting size of a new player
-  adult: 30        # Maximum size a player can grow to
+  adult: 500        # Maximum size a player can grow to
   growth_duration: 300  # Time in seconds to reach adult size
 
 # Visual appearance

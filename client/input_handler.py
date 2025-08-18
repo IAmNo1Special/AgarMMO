@@ -38,7 +38,7 @@ class InputHandler:
             return
             
         player = self.players[self.current_id]
-        vel = max(game_cfg['min_velocity'], self.START_VEL - round(player["score"]/game_cfg['player_velocity_score_divisor']))
+        vel = self.START_VEL
         
         keys = pygame.key.get_pressed()
         dx, dy = 0, 0

@@ -27,16 +27,6 @@ class UIRenderer:
         seconds = t % 60
         return f"{minutes}:{seconds:02d}"
 
-    def __init__(self, WIN: pygame.Surface, players: Dict[str, Any], game_time: int, W: int, H: int, TIME_FONT: pygame.font.Font, SCORE_FONT: pygame.font.Font):
-        self.WIN = WIN
-        self.players = players
-        self.game_time = game_time
-        self.W = W
-        self.H = H
-        self.TIME_FONT = TIME_FONT
-        self.SCORE_FONT = SCORE_FONT
-        self.last_ui_state = {}
-
     def draw_ui(self, player_score, player_age, growth_percentage):
         """Draw the user interface with player stats and game info
         
@@ -55,12 +45,7 @@ class UIRenderer:
             'age': round(player_age),
             'growth': round(growth_percentage)
         }
-        
-        # Only redraw if something changed
-        if hasattr(self, 'last_ui_state') and self.last_ui_state == current_state:
-            return
-            
-        self.last_ui_state = current_state
+
         # Draw scoreboard
         sorted_players = sorted(
             self.players.items(), 
