@@ -1,5 +1,7 @@
 import random
 import time
+import math
+
 from shared.entities.survival import SurvivalStats, SurvivalSystem
 from shared.entities.skills.push import PushSkill
 from shared.entities.skills.pull import PullSkill
@@ -90,7 +92,6 @@ class Player:
 
     def is_colliding(self, other):
         """Check if this player completely covers another object."""
-        import math
         dx = self.x - other.x
         dy = self.y - other.y
         distance = math.sqrt(dx**2 + dy**2)
