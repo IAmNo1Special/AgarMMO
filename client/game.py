@@ -16,7 +16,7 @@ class Game:
             pygame.init()
 
         # Load configuration
-        self.load_config()
+        self._load_game_config()
         
         # Game state
         self.players = {}
@@ -70,7 +70,7 @@ class Game:
             START_VEL=self.START_VEL
         )
     
-    def load_config(self):
+    def _load_game_config(self):
         """Load game configuration from config files"""
         # Screen and world dimensions
         self.W, self.H = world_cfg['screen_width'], world_cfg['screen_height']
