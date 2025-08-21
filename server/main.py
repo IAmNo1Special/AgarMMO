@@ -1,22 +1,10 @@
-"""
-Refactored server script for running agar.io server with improved architecture
-"""
-import socket
 import threading
-import json
-import time
-import random
-import math
-import weakref
 import logging
-import select
-from typing import Dict, List, Set, Tuple, Optional
-from dataclasses import asdict
-from shared.config_loader import server_cfg, network_cfg, world_cfg, player_cfg, game_cfg, food_cfg, skills_cfg
+from typing import Dict, List
+from shared.config_loader import world_cfg, player_cfg
 
 from shared.entities.player import Player
 from shared.entities.food import Food
-from server.client_handler import ClientThread
 from server.game_manager import GameManager
 from server.network_manager import NetworkManager
 
