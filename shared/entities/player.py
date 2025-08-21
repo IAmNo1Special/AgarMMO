@@ -89,9 +89,9 @@ class Player:
         self.score += amount
 
     def is_colliding(self, other):
-        """Check for collision with another object."""
+        """Check if this player completely covers another object."""
         import math
         dx = self.x - other.x
         dy = self.y - other.y
         distance = math.sqrt(dx**2 + dy**2)
-        return distance < self.radius + other.radius
+        return distance + other.radius <= self.radius
