@@ -56,7 +56,7 @@ class Network:
             config: Optional configuration for the network connection.
                    If not provided, uses values from network_cfg.
         """
-        self._config = config or self._load_config()
+        self._config = config or self._load_network_config()
         self._socket: Optional[socket.socket] = None
         self._lock = RLock()
         self._connected = False
@@ -71,7 +71,7 @@ class Network:
         # Initialize socket
         self._init_socket()
     
-    def _load_config(self) -> ConnectionConfig:
+    def _load_network_config(self) -> ConnectionConfig:
         """Load configuration from network_cfg."""
         return ConnectionConfig(
             host=network_cfg.get('host', 'localhost'),
