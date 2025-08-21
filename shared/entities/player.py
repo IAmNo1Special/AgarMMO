@@ -1,5 +1,7 @@
 import random
 import time
+import math
+
 from shared.entities.survival import SurvivalStats, SurvivalSystem
 from shared.entities.skills.push import PushSkill
 from shared.entities.skills.pull import PullSkill
@@ -88,10 +90,22 @@ class Player:
         """Increase the player's score."""
         self.score += amount
 
-    def is_colliding(self, other):
-        """Check for collision with another object."""
-        import math
+    def is_colliding(self, other, require_complete_overlap=True):
+        """Check for collision with another object.
+        
+        Args:
+            other: The other object to check collision with
+            require_complete_overlap: If True, returns True only if this object is completely inside the other
+        """
         dx = self.x - other.x
         dy = self.y - other.y
         distance = math.sqrt(dx**2 + dy**2)
+        
+        if require_complete_overlap:
+            # For complete overlap, the distance between centers plus the smaller radius
+            # must be less than the larger radius
+            if self.radius > other.radius:
+                return distance + other.radius <= self.radius
+            else:
+                return distance + self.radius <= other.radius
         return distance < self.radius + other.radius

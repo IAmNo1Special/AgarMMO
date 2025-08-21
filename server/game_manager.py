@@ -2,10 +2,10 @@ import random
 import math
 import time
 import logging
-from typing import Dict, List, Set, Tuple, Optional
+from typing import Dict, List, Tuple
 from threading import RLock
 
-from shared.config_loader import server_cfg, world_cfg, player_cfg, game_cfg, food_cfg, skills_cfg
+from shared.config_loader import server_cfg, world_cfg, game_cfg, food_cfg, skills_cfg
 from shared.entities.player import Player
 from shared.entities.food import Food
 
@@ -55,29 +55,37 @@ class GameManager:
 
     def player_collision(self, players):
         """Check for player collisions and handle them based on size."""
-        sorted_players = sorted(list(players.values()), key=lambda p: p.radius)
+        player_list = list(players.values())
         
-        for i, player1 in enumerate(sorted_players):
-            for player2 in sorted_players[i+1:]:
-                if player1.is_colliding(player2):
-                    # Calculate size ratio between players
-                    size_ratio = player2.radius / player1.radius
+        for i, player1 in enumerate(player_list):
+            for j in range(i + 1, len(player_list)):
+                player2 = player_list[j]
+                
+                # Check if players are colliding at all
+                if not player1.is_colliding(player2, require_complete_overlap=False):
+                    continue
                     
-                    # Only allow eating if the size difference is above the threshold
-                    if size_ratio > game_cfg['player_eating_threshold']:
-                        # Player2 is significantly larger, eats player1
-                        player2.increase_score(player1.score)
-                        player1.score = 0
-                        player1.birth_time = time.time() # Reset birth time on respawn
-                        player1.x, player1.y = self.get_start_location(players)
-                        print(f"[GAME] {player2.name} (size: {player2.radius:.1f}) ATE {player1.name} (size: {player1.radius:.1f})")
-                    elif (1 / size_ratio) > game_cfg['player_eating_threshold']:
-                        # Player1 is significantly larger, eats player2
-                        player1.increase_score(player2.score)
-                        player2.score = 0
-                        player2.birth_time = time.time() # Reset birth time on respawn
-                        player2.x, player2.y = self.get_start_location(players)
-                        print(f"[GAME] {player1.name} (size: {player1.radius:.1f}) ATE {player2.name} (size: {player2.radius:.1f})")
+                # Determine which player is larger
+                if player1.radius > player2.radius:
+                    larger, smaller = player1, player2
+                elif player2.radius > player1.radius:
+                    larger, smaller = player2, player1
+                else:
+                    continue  # Same size, no eating
+                
+                # Calculate size ratio
+                size_ratio = larger.radius / smaller.radius
+                
+                # Only allow eating if the size difference is above the threshold
+                # and the smaller player is completely inside the larger one
+                if (size_ratio > game_cfg['player_eating_threshold'] and 
+                    smaller.is_colliding(larger)):
+                    # Larger player eats the smaller one
+                    larger.increase_score(smaller.score)
+                    smaller.score = 0
+                    smaller.birth_time = time.time()  # Reset birth time on respawn
+                    smaller.x, smaller.y = self.get_start_location(players)
+                    print(f"[GAME] {larger.name} (size: {larger.radius:.1f}) ATE {smaller.name} (size: {smaller.radius:.1f})")
 
     def use_skill(self, player_id, skill_name):
         """Handle player skill usage."""
