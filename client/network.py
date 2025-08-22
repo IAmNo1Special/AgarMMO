@@ -6,7 +6,7 @@ from typing import Any, Optional, Tuple, Dict, List, Union, Callable, TypeVar, T
 from dataclasses import dataclass
 from threading import Lock, RLock
 
-from shared.config_loader import network_cfg, game_cfg
+from shared.utils.config_loader import network_cfg, game_cfg
 from shared.packets import Packet, ConnectPacket, MovePacket, SkillPacket, GetGameStatePacket, \
     PlayerIdPacket, GameStatePacket, UsernameTakenPacket, ServerFullPacket, PingPacket, PongPacket
 

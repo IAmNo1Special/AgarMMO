@@ -9,7 +9,7 @@ import logging
 import select
 from typing import Dict, List, Set, Tuple, Optional
 from dataclasses import asdict
-from shared.config_loader import server_cfg, network_cfg, world_cfg, player_cfg, game_cfg, food_cfg, skills_cfg
+from shared.utils.config_loader import server_cfg, network_cfg, world_cfg, player_cfg, game_cfg, food_cfg, skills_cfg
 
 from shared.entities.player import Player
 from shared.entities.food import Food

@@ -1,7 +1,7 @@
 import threading
 import logging
 from typing import Dict, List
-from shared.config_loader import world_cfg, player_cfg
+from shared.utils.config_loader import world_cfg, player_cfg
 
 from shared.entities.player import Player
 from shared.entities.food import Food

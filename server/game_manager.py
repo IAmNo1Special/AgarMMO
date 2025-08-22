@@ -5,7 +5,7 @@ import logging
 from typing import Dict, List, Tuple
 from threading import RLock
 
-from shared.config_loader import server_cfg, world_cfg, game_cfg, food_cfg, skills_cfg
+from shared.utils.config_loader import server_cfg, world_cfg, game_cfg, food_cfg, skills_cfg
 from shared.entities.player import Player
 from shared.entities.food import Food
 

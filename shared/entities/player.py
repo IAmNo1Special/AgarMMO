@@ -5,7 +5,7 @@ import math
 from shared.entities.survival import SurvivalStats, SurvivalSystem
 from shared.entities.skills.push import PushSkill
 from shared.entities.skills.pull import PullSkill
-from shared.config_loader import player_cfg
+from shared.utils.config_loader import player_cfg
 
 
 class Player:
