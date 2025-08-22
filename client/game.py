@@ -3,7 +3,7 @@ import os
 import time
 import pygame
 from client.network import Network
-from shared.config_loader import player_cfg, world_cfg, game_cfg, food_cfg, skills_cfg
+from shared.utils.config_loader import player_cfg, world_cfg, game_cfg, food_cfg, skills_cfg
 from client.rendering.game_renderer import GameRenderer
 from client.rendering.ui_renderer import UIRenderer
 from client.input_handler import InputHandler

@@ -1,4 +1,4 @@
-from shared.config_loader import skills_cfg
+from shared.utils.config_loader import skills_cfg
 
 class PullSkill:
     def __init__(self, level=1):
