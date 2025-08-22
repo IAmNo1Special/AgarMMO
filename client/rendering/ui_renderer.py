@@ -1,7 +1,7 @@
 import pygame
 from typing import Dict, Any
 
-from shared.config_loader import game_cfg
+from shared.utils.config_loader import game_cfg
 
 class UIRenderer:
     def __init__(self, WIN: pygame.Surface, players: Dict[str, Any], game_time: int, W: int, H: int, TIME_FONT: pygame.font.Font, SCORE_FONT: pygame.font.Font):

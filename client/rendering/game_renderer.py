@@ -1,7 +1,7 @@
 import pygame
 from typing import Dict, List, Tuple, Any
 
-from shared.config_loader import game_cfg, world_cfg, skills_cfg
+from shared.utils.config_loader import game_cfg, world_cfg, skills_cfg
 
 class GameRenderer:
     def __init__(self, WIN: pygame.Surface, players: Dict[str, Any], balls: List[Any], camera_x: int, camera_y: int, W: int, H: int, WORLD_W: int, WORLD_H: int, PLAYER_RADIUS: int, BALL_RADIUS: int, NAME_FONT: pygame.font.Font, PLAYER_COLORS: List[Tuple[int, int, int]], FOOD_COLORS: List[Tuple[int, int, int]]):
