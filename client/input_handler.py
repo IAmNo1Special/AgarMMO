@@ -1,7 +1,7 @@
 import pygame
 from typing import Dict, Any
 
-from shared.config_loader import game_cfg
+from shared.utils.config_loader import game_cfg
 from shared.packets import MovePacket, SkillPacket
 
 class InputHandler:

@@ -3,7 +3,7 @@ from dataclasses import dataclass, asdict
 import random
 
 from shared.entities.game_object import GameObject
-from shared.config_loader import food_cfg
+from shared.utils.config_loader import food_cfg
 
 @dataclass
 class Food(GameObject):

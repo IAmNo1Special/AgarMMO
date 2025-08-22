@@ -2,7 +2,7 @@ if __name__ == "__main__":
     import contextlib
     import pygame
     from client.game import Game
-    from shared.config_loader import game_cfg
+    from shared.utils.config_loader import game_cfg
 
     # Initialize pygame and suppress welcome message
     with contextlib.redirect_stdout(None):
