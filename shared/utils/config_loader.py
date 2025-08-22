@@ -15,7 +15,7 @@ def load_config(config_name: str) -> Dict[str, Any]:
     Returns:
         Dict containing the configuration data
     """
-    config_dir = Path(__file__).parent.parent / 'config'
+    config_dir = Path(__file__).parent.parent.parent / 'config'
     config_path = config_dir / f"{config_name}.yaml"
     
     with open(config_path, 'r', encoding='utf-8') as f:
